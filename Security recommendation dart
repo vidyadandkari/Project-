@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+
+class SecurityRecommendationsPage extends StatelessWidget {
+  const SecurityRecommendationsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Security Recommendations'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Security Recommendations',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Security tips to help protect your device',
+              style: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 15,
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            _recommendationCard(
+              icon: Icons.lock,
+              title: 'Use Strong Passwords',
+              description:
+                  'Use passwords with uppercase letters, lowercase '
+                  'letters, numbers and special characters.',
+            ),
+
+            _recommendationCard(
+              icon: Icons.system_update,
+              title: 'Keep Software Updated',
+              description:
+                  'Install Android and application updates regularly '
+                  'to receive security fixes.',
+            ),
+
+            _recommendationCard(
+              icon: Icons.apps,
+              title: 'Review Installed Applications',
+              description:
+                  'Remove applications that you do not use and '
+                  'avoid installing apps from untrusted sources.',
+            ),
+
+            _recommendationCard(
+              icon: Icons.wifi,
+              title: 'Use Secure Networks',
+              description:
+                  'Avoid connecting to unknown or unsecured Wi-Fi '
+                  'networks when handling sensitive information.',
+            ),
+
+            _recommendationCard(
+              icon: Icons.security,
+              title: 'Enable Device Security',
+              description:
+                  'Use a screen lock such as a PIN, password or '
+                  'biometric authentication to protect the device.',
+            ),
+
+            _recommendationCard(
+              icon: Icons.warning_amber_rounded,
+              title: 'Be Careful with Suspicious Links',
+              description:
+                  'Do not open unknown links or download files '
+                  'from untrusted sources.',
+            ),
+
+            const SizedBox(height: 15),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF151F38),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.cyan.withOpacity(0.25),
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.cyan,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'These recommendations provide general '
+                      'cybersecurity guidance. They are not a '
+                      'guarantee that a device is completely secure.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _recommendationCard({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: const Color(0xFF151F38),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.cyan.withOpacity(0.15),
+              child: Icon(
+                icon,
+                color: Colors.cyan,
+              ),
+            ),
+
+            const SizedBox(width: 15),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 7),
+
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

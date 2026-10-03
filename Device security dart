@@ -1,0 +1,240 @@
+import 'package:flutter/material.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'history_manager.dart';
+
+class DeviceSecurityPage extends StatefulWidget {
+  const DeviceSecurityPage({super.key});
+
+  @override
+  State<DeviceSecurityPage> createState() => _DeviceSecurityPageState();
+}
+
+class _DeviceSecurityPageState extends State<DeviceSecurityPage> {
+  String deviceName = 'Checking...';
+  String androidVersion = 'Checking...';
+  String sdkVersion = 'Checking...';
+  String deviceModel = 'Checking...';
+
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadDeviceInfo();
+  }
+
+  Future<void> loadDeviceInfo() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+
+      if (!mounted) return;
+
+      setState(() {
+        deviceName = androidInfo.device;
+        deviceModel = androidInfo.model;
+        androidVersion = androidInfo.version.release;
+        sdkVersion = androidInfo.version.sdkInt.toString();
+        loading = false;
+      });
+
+      await HistoryManager.addRecord(
+        title: 'Device Security',
+        result: 'Device information checked',
+        secure: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        loading = false;
+        deviceName = 'Unavailable';
+        deviceModel = 'Unavailable';
+        androidVersion = 'Unavailable';
+        sdkVersion = 'Unavailable';
+      });
+
+      await HistoryManager.addRecord(
+        title: 'Device Security',
+        result: 'Unable to read device information',
+        secure: false,
+      );
+    }
+  }
+
+  Widget infoCard(
+    IconData icon,
+    String title,
+    String value,
+  ) {
+    return Card(
+      color: const Color(0xFF151F38),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.cyan.withOpacity(0.15),
+          child: Icon(
+            icon,
+            color: Colors.cyan,
+          ),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 5),
+          child: Text(value),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Device Security'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: loading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Device Security',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'View basic security-related device information',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 15,
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF151F38),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: Colors.cyan.withOpacity(0.25),
+                      ),
+                    ),
+                    child: const Column(
+                      children: [
+                        Icon(
+                          Icons.phone_android,
+                          size: 60,
+                          color: Colors.cyan,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'DEVICE INFORMATION',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            letterSpacing: 1.5,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'DEVICE CHECK COMPLETE',
+                          style: TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  const Text(
+                    'Device Details',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  infoCard(
+                    Icons.smartphone,
+                    'Device',
+                    deviceName,
+                  ),
+
+                  infoCard(
+                    Icons.devices,
+                    'Model',
+                    deviceModel,
+                  ),
+
+                  infoCard(
+                    Icons.android,
+                    'Android Version',
+                    androidVersion,
+                  ),
+
+                  infoCard(
+                    Icons.settings,
+                    'SDK Version',
+                    sdkVersion,
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF151F38),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.cyan.withOpacity(0.25),
+                      ),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.cyan,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'SentinelX reads basic device information '
+                            'locally. No personal data is transmitted '
+                            'to an external server.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}

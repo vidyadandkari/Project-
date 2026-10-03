@@ -1,0 +1,201 @@
+import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:http/http.dart' as http;
+import 'history_manager.dart';
+
+class NetworkSecurityPage extends StatefulWidget {
+  const NetworkSecurityPage({super.key});
+
+  @override
+  State<NetworkSecurityPage> createState() => _NetworkSecurityPageState();
+}
+
+class _NetworkSecurityPageState extends State<NetworkSecurityPage> {
+  String connectionStatus = 'Checking...';
+  String internetStatus = 'Checking...';
+
+  IconData connectionIcon = Icons.wifi;
+  Color connectionColor = Colors.orange;
+
+  IconData internetIcon = Icons.public;
+  Color internetColor = Colors.orange;
+
+  @override
+  void initState() {
+    super.initState();
+    checkNetwork();
+  }
+
+  Future<void> checkNetwork() async {
+    await checkConnection();
+    await checkInternet();
+
+    if (!mounted) return;
+
+    HistoryManager.addRecord(
+      title: 'Network Security',
+      result: internetStatus == 'Internet Available'
+          ? 'Network and Internet Available'
+          : 'Internet connection could not be verified',
+      secure: internetStatus == 'Internet Available',
+    );
+  }
+
+  Future<void> checkConnection() async {
+    final List<ConnectivityResult> results =
+        await Connectivity().checkConnectivity();
+
+    if (!mounted) return;
+
+    if (results.contains(ConnectivityResult.wifi)) {
+      setState(() {
+        connectionStatus = 'Connected to Wi-Fi';
+        connectionIcon = Icons.wifi;
+        connectionColor = Colors.greenAccent;
+      });
+    } else if (results.contains(ConnectivityResult.mobile)) {
+      setState(() {
+        connectionStatus = 'Connected to Mobile Data';
+        connectionIcon = Icons.signal_cellular_alt;
+        connectionColor = Colors.greenAccent;
+      });
+    } else {
+      setState(() {
+        connectionStatus = 'No Network Connection';
+        connectionIcon = Icons.wifi_off;
+        connectionColor = Colors.redAccent;
+      });
+    }
+  }
+
+  Future<void> checkInternet() async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://www.google.com'))
+          .timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          internetStatus = 'Internet Available';
+          internetIcon = Icons.public;
+          internetColor = Colors.greenAccent;
+        });
+      } else {
+        setState(() {
+          internetStatus = 'Internet Unavailable';
+          internetIcon = Icons.cloud_off;
+          internetColor = Colors.redAccent;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        internetStatus = 'Internet Unavailable';
+        internetIcon = Icons.cloud_off;
+        internetColor = Colors.redAccent;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Network Security'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Network Security Check',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Card(
+              color: const Color(0xFF151F38),
+              child: ListTile(
+                leading: Icon(
+                  connectionIcon,
+                  color: connectionColor,
+                  size: 32,
+                ),
+                title: const Text(
+                  'Network Connection',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(connectionStatus),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Card(
+              color: const Color(0xFF151F38),
+              child: ListTile(
+                leading: Icon(
+                  internetIcon,
+                  color: internetColor,
+                  size: 32,
+                ),
+                title: const Text(
+                  'Internet Availability',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(internetStatus),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Card(
+              color: const Color(0xFF151F38),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.security,
+                  color: Colors.greenAccent,
+                  size: 32,
+                ),
+                title: const Text(
+                  'Security Status',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  internetStatus == 'Internet Available'
+                      ? 'Network and internet are available'
+                      : 'Internet connection could not be verified',
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: checkNetwork,
+                icon: const Icon(Icons.refresh),
+                label: const Text('CHECK AGAIN'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

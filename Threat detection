@@ -1,0 +1,339 @@
+import 'package:flutter/material.dart';
+import 'package:installed_apps/installed_apps.dart';
+import 'history_manager.dart';
+
+class ThreatDetectionPage extends StatefulWidget {
+  const ThreatDetectionPage({super.key});
+
+  @override
+  State<ThreatDetectionPage> createState() => _ThreatDetectionPageState();
+}
+
+class _ThreatDetectionPageState extends State<ThreatDetectionPage> {
+  bool isScanning = false;
+  bool scanComplete = false;
+
+  int totalApps = 0;
+  int suspiciousApps = 0;
+  int safeApps = 0;
+
+  List<String> suspiciousList = [];
+
+  Future<void> startScan() async {
+    setState(() {
+      isScanning = true;
+      scanComplete = false;
+      totalApps = 0;
+      suspiciousApps = 0;
+      safeApps = 0;
+      suspiciousList = [];
+    });
+
+    try {
+      final apps = await InstalledApps.getInstalledApps(
+        excludeSystemApps: true,
+        excludeNonLaunchableApps: false,
+        withIcon: false,
+      );
+
+      int suspicious = 0;
+      final List<String> detected = [];
+
+      for (final app in apps) {
+        final packageName = app.packageName.toLowerCase();
+        final appName = app.name.toLowerCase();
+
+        bool isSuspicious = false;
+
+        if (packageName.contains('hack') ||
+            packageName.contains('malware') ||
+            packageName.contains('spy') ||
+            packageName.contains('keylog') ||
+            packageName.contains('rat')) {
+          isSuspicious = true;
+        }
+
+        if (appName.contains('hack') ||
+            appName.contains('malware') ||
+            appName.contains('spyware') ||
+            appName.contains('keylogger')) {
+          isSuspicious = true;
+        }
+
+        if (isSuspicious) {
+          suspicious++;
+          detected.add(app.name);
+        }
+      }
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      setState(() {
+        isScanning = false;
+        scanComplete = true;
+        totalApps = apps.length;
+        suspiciousApps = suspicious;
+        safeApps = apps.length - suspicious;
+        suspiciousList = detected;
+      });
+
+      HistoryManager.addRecord(
+        title: 'Threat Detection',
+        result: suspicious == 0
+            ? '$totalApps applications scanned - No suspicious applications detected'
+            : '$suspicious suspicious application(s) detected',
+        secure: suspicious == 0,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isScanning = false;
+        scanComplete = true;
+      });
+
+      HistoryManager.addRecord(
+        title: 'Threat Detection',
+        result: 'Threat scan could not be completed',
+        secure: false,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Threat Detection'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Threat Detection',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Analyze installed applications for basic security risks',
+              style: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 25),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(25),
+              decoration: BoxDecoration(
+                color: const Color(0xFF151F38),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    isScanning
+                        ? Icons.radar
+                        : scanComplete
+                            ? (suspiciousApps > 0
+                                ? Icons.warning_amber_rounded
+                                : Icons.check_circle)
+                            : Icons.security,
+                    size: 70,
+                    color: isScanning
+                        ? Colors.orangeAccent
+                        : suspiciousApps > 0
+                            ? Colors.orangeAccent
+                            : Colors.greenAccent,
+                  ),
+                  const SizedBox(height: 15),
+
+                  Text(
+                    isScanning
+                        ? 'SCANNING...'
+                        : scanComplete
+                            ? 'SCAN COMPLETE'
+                            : 'READY TO SCAN',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: isScanning
+                          ? Colors.orangeAccent
+                          : Colors.greenAccent,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  if (isScanning)
+                    const CircularProgressIndicator(),
+
+                  if (scanComplete) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      suspiciousApps == 0
+                          ? 'No suspicious applications detected'
+                          : '$suspiciousApps suspicious application(s) detected',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            const Text(
+              'Scan Results',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            _resultCard(
+              Icons.apps,
+              'Applications Scanned',
+              '$totalApps applications',
+              Colors.cyan,
+            ),
+
+            _resultCard(
+              Icons.check_circle,
+              'Safe Applications',
+              '$safeApps applications',
+              Colors.greenAccent,
+            ),
+
+            _resultCard(
+              Icons.warning_amber_rounded,
+              'Suspicious Applications',
+              '$suspiciousApps applications',
+              suspiciousApps > 0
+                  ? Colors.orangeAccent
+                  : Colors.greenAccent,
+            ),
+
+            if (suspiciousList.isNotEmpty) ...[
+              const SizedBox(height: 20),
+
+              const Text(
+                'Potentially Suspicious Apps',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              ...suspiciousList.map(
+                (appName) => Card(
+                  color: const Color(0xFF151F38),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orangeAccent,
+                    ),
+                    title: Text(appName),
+                    subtitle: const Text(
+                      'Flagged by basic package-name heuristic',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: isScanning ? null : startScan,
+                icon: const Icon(Icons.search),
+                label: Text(
+                  isScanning
+                      ? 'SCANNING...'
+                      : 'START SECURITY SCAN',
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: const Color(0xFF151F38),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.cyan.withOpacity(0.25),
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.cyan,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'This scan uses basic local heuristics. '
+                      'A flagged application is not automatically malware; '
+                      'it should be investigated further.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _resultCard(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: const Color(0xFF151F38),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.15),
+          child: Icon(
+            icon,
+            color: color,
+          ),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(value),
+      ),
+    );
+  }
+}

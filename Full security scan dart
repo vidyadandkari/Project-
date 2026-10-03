@@ -1,0 +1,303 @@
+import 'package:flutter/material.dart';
+import 'history_manager.dart';
+
+class FullSecurityScanPage extends StatefulWidget {
+  const FullSecurityScanPage({super.key});
+
+  @override
+  State<FullSecurityScanPage> createState() =>
+      _FullSecurityScanPageState();
+}
+
+class _FullSecurityScanPageState
+    extends State<FullSecurityScanPage> {
+  bool scanning = true;
+  int currentStep = 0;
+
+  final List<String> scanSteps = [
+    'Checking network security',
+    'Analyzing installed applications',
+    'Checking for potential threats',
+    'Checking device security',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    startFullScan();
+  }
+
+  Future<void> startFullScan() async {
+    for (int i = 0; i < scanSteps.length; i++) {
+      if (!mounted) return;
+
+      setState(() {
+        currentStep = i;
+      });
+
+      await Future.delayed(
+        const Duration(seconds: 2),
+      );
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      scanning = false;
+    });
+
+    await HistoryManager.addRecord(
+      title: 'Full Security Scan',
+      result: 'Full security scan completed',
+      secure: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Full Security Scan'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: scanning
+            ? _buildScanningScreen()
+            : _buildCompletedScreen(),
+      ),
+    );
+  }
+
+  Widget _buildScanningScreen() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+
+          const Icon(
+            Icons.radar,
+            size: 90,
+            color: Colors.cyan,
+          ),
+
+          const SizedBox(height: 25),
+
+          const Text(
+            'SCANNING...',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.cyan,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            scanSteps[currentStep],
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 16,
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          LinearProgressIndicator(
+            value: (currentStep + 1) / scanSteps.length,
+            minHeight: 10,
+            borderRadius: BorderRadius.circular(10),
+          ),
+
+          const SizedBox(height: 30),
+
+          ...List.generate(
+            scanSteps.length,
+            (index) {
+              final bool completed = index < currentStep;
+              final bool active = index == currentStep;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF151F38),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      completed
+                          ? Icons.check_circle
+                          : active
+                              ? Icons.sync
+                              : Icons.circle_outlined,
+                      color: completed
+                          ? Colors.greenAccent
+                          : active
+                              ? Colors.cyan
+                              : Colors.grey,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        scanSteps[index],
+                        style: TextStyle(
+                          color: active
+                              ? Colors.white
+                              : Colors.grey.shade400,
+                          fontWeight: active
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedScreen() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 60),
+
+          const Icon(
+            Icons.check_circle,
+            size: 100,
+            color: Colors.greenAccent,
+          ),
+
+          const SizedBox(height: 25),
+
+          const Text(
+            'SCAN COMPLETE',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.greenAccent,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            'SentinelX completed the full security scan.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 16,
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF151F38),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              children: [
+                Text(
+                  'Security Checks Completed',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                SizedBox(height: 18),
+
+                ResultRow(
+                  icon: Icons.wifi,
+                  title: 'Network Security',
+                ),
+
+                ResultRow(
+                  icon: Icons.apps,
+                  title: 'Application Security',
+                ),
+
+                ResultRow(
+                  icon: Icons.warning_amber_rounded,
+                  title: 'Threat Detection',
+                ),
+
+                ResultRow(
+                  icon: Icons.phone_android,
+                  title: 'Device Security',
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('BACK TO DASHBOARD'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ResultRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const ResultRow({
+    super.key,
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: Colors.greenAccent,
+            size: 22,
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Text(title),
+          ),
+
+          const Icon(
+            Icons.check_circle,
+            color: Colors.greenAccent,
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}

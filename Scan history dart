@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import 'history_manager.dart';
+
+class ScanHistoryPage extends StatefulWidget {
+  const ScanHistoryPage({super.key});
+
+  @override
+  State<ScanHistoryPage> createState() => _ScanHistoryPageState();
+}
+
+class _ScanHistoryPageState extends State<ScanHistoryPage> {
+  @override
+  Widget build(BuildContext context) {
+    final records = HistoryManager.records;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan History'),
+        backgroundColor: const Color(0xFF11182D),
+      ),
+      body: records.isEmpty
+          ? _emptyHistory()
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                const Text(
+                  'Security Scan History',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'Recent security checks performed in SentinelX',
+                  style: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 15,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _clearHistory,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('CLEAR HISTORY'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                ...records.map(
+                  (record) => _historyCard(record),
+                ),
+
+                const SizedBox(height: 20),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF151F38),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.cyan.withOpacity(0.25),
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.cyan,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Scan history is saved locally on this device '
+                          'so you can review previous security checks.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Future<void> _clearHistory() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear Scan History?'),
+          content: const Text(
+            'This will permanently remove all saved scan records '
+            'from this device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text(
+                'CLEAR',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) {
+      return;
+    }
+
+    await HistoryManager.clearHistory();
+
+    if (!mounted) return;
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Scan history cleared successfully'),
+      ),
+    );
+  }
+
+  Widget _emptyHistory() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.history,
+              size: 70,
+              color: Colors.cyan,
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              'No Scan History',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              'Complete a security scan to see its result here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyCard(ScanRecord record) {
+    final Color statusColor =
+        record.secure ? Colors.greenAccent : Colors.redAccent;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: const Color(0xFF151F38),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(15),
+
+        leading: CircleAvatar(
+          backgroundColor: statusColor.withOpacity(0.15),
+          child: Icon(
+            record.secure
+                ? Icons.check_circle
+                : Icons.warning_amber_rounded,
+            color: statusColor,
+          ),
+        ),
+
+        title: Text(
+          record.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(record.result),
+
+              const SizedBox(height: 5),
+
+              Text(
+                _formatTime(record.time),
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        trailing: Icon(
+          record.secure
+              ? Icons.check_circle
+              : Icons.error,
+          color: statusColor,
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+
+    return 'Scanned at $hour:$minute';
+  }
+}

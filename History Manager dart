@@ -1,0 +1,104 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ScanRecord {
+  final String title;
+  final String result;
+  final bool secure;
+  final DateTime time;
+
+  ScanRecord({
+    required this.title,
+    required this.result,
+    required this.secure,
+    required this.time,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'result': result,
+      'secure': secure,
+      'time': time.toIso8601String(),
+    };
+  }
+
+  factory ScanRecord.fromMap(Map<String, dynamic> map) {
+    return ScanRecord(
+      title: map['title'] ?? '',
+      result: map['result'] ?? '',
+      secure: map['secure'] ?? false,
+      time: DateTime.parse(map['time']),
+    );
+  }
+}
+
+class HistoryManager {
+  static final List<ScanRecord> records = [];
+
+  static const String _historyKey = 'scan_history';
+
+  // Load saved scan history
+  static Future<void> loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedHistory = prefs.getStringList(_historyKey);
+
+    if (savedHistory == null) {
+      return;
+    }
+
+    records.clear();
+
+    for (final item in savedHistory) {
+      final map = jsonDecode(item);
+
+      records.add(
+        ScanRecord.fromMap(
+          Map<String, dynamic>.from(map),
+        ),
+      );
+    }
+  }
+
+  // Add a new scan record
+  static Future<void> addRecord({
+    required String title,
+    required String result,
+    required bool secure,
+  }) async {
+    final record = ScanRecord(
+      title: title,
+      result: result,
+      secure: secure,
+      time: DateTime.now(),
+    );
+
+    records.insert(0, record);
+
+    await _saveHistory();
+  }
+
+  // Clear all scan history
+  static Future<void> clearHistory() async {
+    records.clear();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove(_historyKey);
+  }
+
+  // Save history to the device
+  static Future<void> _saveHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedHistory = records
+        .map((record) => jsonEncode(record.toMap()))
+        .toList();
+
+    await prefs.setStringList(
+      _historyKey,
+      savedHistory,
+    );
+  }
+}
